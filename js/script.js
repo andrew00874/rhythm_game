@@ -1,13 +1,12 @@
 $(function () {
   // ===== 게임 변수 초기화 =====
-  let score = 0; //플레이어의 현재 점수
-  let miss = 0; // 놓친 아이템 수
-  let timeLeft = 60; // 남은 게임 시간 (1분 = 초)
-  let gameActive = true; // 게임 진행 상태 확인
-  let gameInterval; // 떨어지는 아이템 생성 후 id 값 설정
-  let timerInterval; // 타이머 ID
+  let score = 0;
+  let miss = 0;
+  let timeLeft = 60;
+  let gameActive = true;
+  let gameInterval;
+  let timerInterval;
 
-  // 키보드와 키보드에 해당하는 번호 연결 설정
   const keyMap = {
     d: 0,
     f: 1,
@@ -17,26 +16,18 @@ $(function () {
 
   /**
    * 게임 시작 함수
-   * - 아이템 생성과 타이머를 시작한다.
    */
-  function startGame() {
-    // 새로운 아이템을 0.8초마다 생성해서 떨어뜨리기  (1000 = 1초)
-    gameInterval = setInterval(아이템생성함수, 800);
-
-    // 1000ms(1초) 마다 타이머 업데이트
-    timerInterval = setInterval(타이머함수, 1000);
-  }
+  $("#startBtn").click(function startGame() {
+    gameInterval = setInterval(createItem, 800);
+    timerInterval = setInterval(updateTimer, 1000);
+  });
 
   /**
    * 타이머 업데이트 함수
-   * - 매초마다 실행되어 남은 시간을 감소시킨다.
-   * - 시간이 0이 되면 게임을 종료한다.
    */
-  function 타이머함수() {
-    timeLeft--; // 남은 시간 1초 감소
-    $("#timer").text(timeLeft); //화면에 떠나고 남은 시간 표시
-
-    // 시간이 60초가 다 되면 게임 종료
+  function updateTimer() {
+    timeLeft--;
+    $("#timer").text(timeLeft);
     if (timeLeft <= 0) {
       endGame();
     }
@@ -44,129 +35,119 @@ $(function () {
 
   /**
    * 게임 종료 함수
-   * - 모든 인터벌을 정리하고 최종 결과를 표시한다.
    */
   function endGame() {
-    gameActive = false; //게임 상태 비활성
-    clearInterval(gameInterval); // 떨어지는 아이템 생성 중지
-    clearInterval(timerInterval); // 60초 부터 떨어지는 시간 초 설정 중지
-
-    // 최종 점수를 게임오버 모달에 표시
+    gameActive = false;
+    clearInterval(gameInterval);
+    clearInterval(timerInterval);
     $("#final-score").text(score);
     $("#final-miss").text(miss);
-    $("#game-over").show(); // 게임이 종료됨을 보여줌
+    $("#game-over").show();
   }
 
   /**
-   * 아이템 생성 함수
-   * - 랜덤한 레인에 새로운 아이템을 생성하고 아래로 떨어뜨린다.
-   * - 아이템생성함수 -> createItems 로 함수명 변경하는 것이 좋음
+   * 아이템 생성 함수 (이름 변경: 아이템생성함수 -> createItem)
    */
-  function 아이템생성함수() {
-    // 0 ~ 3 중 랜덤한 레인 선택
+  function createItem() {
     const lane = Math.floor(Math.random() * 4);
-
-    // 선택된 레인의 가로 너비 계산
-    // 0 ~ 3 번 레인 중 .eq =  동일한 레인의 가로 너비 길이 가져오기
     const width = $(".lane").eq(lane).width();
-
-    // 새로운 아이템 생성하고 떨어뜨리기
     const item = $("<div class='note'>")
       .css({
         left: lane * width + "px",
         width: width + "px",
       })
-      .data("lane", lane); // 아이템이 속한 레인 번호 저장
+      .data("lane", lane);
 
-    // 게임 컨테이너에 아이템 추가
     $("#game-container").append(item);
 
-    // 아이템을 아래로 떨어뜨리는 애니메이션 (2초 동안)
     item.animate(
       { top: $("#game-container").height() + "px" },
       2000,
       "linear",
       function () {
-        // 애니메이션 완료 시 (아이템이 높이 아래에 도착했을 때)
         if (gameActive) {
-          $(this).remove(); //현재 item 제거
-          miss++; // 놓친 아이템 카운터 증가
-          $("#miss").text(miss); //화면에 놓친 아이템 수 작성해서 사용자에게 알려주기
+          $(this).remove();
+          miss++;
+          $("#miss").text(miss);
         }
       }
     );
   }
+
   /**
-   * 아이템 적중 시 시각적으로 적중했다는 효과를 생성하는 함수
-   * @param {number} laneIndex - 효과를 표시할 레인 번호(0 ~ 3) 매개변수
+   * 아이템 적중 시각 효과 생성 함수 (이름 변경: 성공함수 -> showHitEffect)
    */
-  function 성공함수(laneIndex) {
-    // 해당 레인의 위치 정보 가져오기
+  function showHitEffect(laneIndex) {
     const lane = $(".lane").eq(laneIndex);
     const laneOffset = lane.position();
-
     const effect = $("<div class='hit-effect'>").css({
-      //레인 중앙에 위치하도록 x좌표 계산(효과 크기의 절반만큼 보정)
       left: laneOffset.left + lane.width() / 2 - 30 + "px",
-      // 판정선 위쪽에 위치하도록 y좌표 설정
       top: $("#game-container").height() - 120 + "px",
     });
 
     $("body").append(effect);
-
     setTimeout(() => effect.remove(), 400);
   }
 
   /**
-   * 키보드 입력 처리 함수
-   * - d, f, j, k 키 입력을 감지하여 아이템 판정을 수행한다.
+   * [1. 새로 추가] 판정 처리 함수
+   * - 키보드, 마우스, 터치 입력에 대한 노트 판정을 모두 이 함수에서 처리합니다.
+   * @param {number} laneIndex - 판정할 레인 번호 (0 ~ 3)
    */
-  $(document).keydown(function (e) {
-    // 입력된 키를 소문자로 무조건 변환
-    const key = e.key.toLowerCase();
-
-    // 유효한 키가 아니라면 다른 키보드는 무시!
-    // 객체에서.hasOwnProperty(사용자가 작성한 키보드 입력값을)
-    //          가지고 있나요?
-    if (!keyMap.hasOwnProperty(key)) {
-      // 가지고 있지 않는게 사실이라면 !
-      return; //아래 코드를 수행하지 못하게 돌려보내기
-    }
-
-    // 입력된 키에 해당하는 레인 번호 가져오기
-    const lane = keyMap[key];
-
-    // 키보드가 누르는 판정선 위치를 계산 현재 위치는 하단에서 80px 위로 설정
+  function processHit(laneIndex) {
+    // 판정선 위치 계산
     const judgeLine = $("#game-container").height() - 80;
 
-    // 해당 레인의 모든 아이템을 검사해서 판정 수행
+    // 해당 레인의 모든 아이템을 검사
     $(".note").each(function () {
-      // 현재 아이템이 입력된 키의 레인과 일치하는지 확인
-      if ($(this).data("lane") === lane) {
+      // 현재 아이템이 입력된 레인과 일치하는지 확인
+      if ($(this).data("lane") === laneIndex) {
         const notePos = $(this).position().top + 25;
 
-        // 아이템이 판정선 근처에 있는지 확인 (50px 오차 범위 사이)
+        // 아이템이 판정선 근처에 있는지 확인 (50px 오차 범위)
         if (Math.abs(notePos - judgeLine) < 50) {
           $(this).stop().remove();
           score++;
           $("#score").text(score);
 
           // 성공 시각 효과 실행
-          성공함수(lane);
+          showHitEffect(laneIndex);
 
           // 해당 키 버튼에 성공 효과 클래스 추가
-          $(".key").eq(lane).addClass("perfect");
-          setTimeout(() => $(".key").eq(lane).removeClass("perfect"), 300);
-          // setTimeout 을이용해서 입력한 키보드 효과를 0.3초 후 누름 뗌 설정에 대해서
-          // CSS 제공
+          $(".key").eq(laneIndex).addClass("perfect");
+          setTimeout(() => $(".key").eq(laneIndex).removeClass("perfect"), 300);
 
-          return false; //each 루르 중단(하나의 아이템만 처리)
+          return false; // .each() 루프 중단 (하나의 아이템만 처리)
         }
       }
     });
-    // 성공/실패 관계없이 항상 키 눌림 설정에 대해서 css 적으로 보여주기
-    $(".key").eq(lane).addClass("passed");
-    setTimeout(() => $(".key").eq(lane).removeClass("passed"), 100);
+
+    // 성공/실패와 관계없이 키 눌림 효과를 보여줌
+    $(".key").eq(laneIndex).addClass("passed");
+    setTimeout(() => $(".key").eq(laneIndex).removeClass("passed"), 100);
+  }
+
+  /**
+   * [2. 수정] 기존 키보드 입력 처리 함수
+   * - 실제 판정 로직을 `processHit` 함수로 넘깁니다.
+   */
+  $(document).keydown(function (e) {
+    const key = e.key.toLowerCase();
+    if (!keyMap.hasOwnProperty(key)) {
+      return;
+    }
+    const laneIndex = keyMap[key];
+    processHit(laneIndex); // 분리된 판정 함수 호출
+  });
+
+  /**
+   * [3. 새로 추가] 마우스 클릭 및 모바일 터치 이벤트 처리
+   * - .key 클래스를 가진 버튼을 클릭(터치)했을 때
+   */
+  $(".key").on("click", function () {
+    // 클릭된 버튼이 몇 번째 버튼인지 인덱스를 가져옴 (0, 1, 2, 3)
+    const laneIndex = $(this).index();
+    processHit(laneIndex); // 분리된 판정 함수 호출
   });
 
   startGame();
