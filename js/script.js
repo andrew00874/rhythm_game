@@ -146,7 +146,7 @@ $(function () {
    */
   $(".key").on("click", function () {
     // 클릭된 버튼이 몇 번째 버튼인지 인덱스를 가져옴 (0, 1, 2, 3)
-    const laneIndex = $(this).index();
+    const laneIndex = $(this).data("lane");
     processHit(laneIndex); // 분리된 판정 함수 호출
   });
 
